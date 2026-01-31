@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Car Rental Price Calculator</title>
+
+  <!-- Flatpickr CSS -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
+
+  <style>
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #0f172a;
+      margin: 0;
+      padding: 0;
+      color: #e5e7eb;
+    }
+    .container {
+      max-width: 420px;
+      margin: auto;
+      padding: 16px;
+    }
+    .card {
+      background: #020617;
+      padding: 20px;
+      border-radius: 16px;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.4);
+    }
+    h1, h2 {
+      text-align: center;
+      margin: 6px 0;
+    }
+    h2 { font-size: 1.3rem; }
+    label {
+      display: block;
+      margin-top: 12px;
+      font-size: 0.9rem;
+      color: #cbd5f5;
+    }
+    input {
+      width: 100%;
+      padding: 10px;
+      margin-top: 6px;
+      border-radius: 10px;
+      border: none;
+      background: #020617;
+      color: #fff;
+      outline: 1px solid #334155;
+    }
+    button {
+      width: 100%;
+      margin-top: 18px;
+      padding: 12px;
+      background: #22c55e;
+      color: #022c22;
+      border: none;
+      border-radius: 12px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .whatsapp {
+      background: #25d366;
+      color: #052e16;
+      margin-top: 12px;
+    }
+    .result {
+      margin-top: 16px;
+      background: #020617;
+      padding: 14px;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      line-height: 1.5;
+    }
+    .note {
+      font-size: 0.75rem;
+      color: #94a3b8;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <div class="card">
+    <h1>SAFE TRAVEL – LOVELY MEMORIES</h1>
+    <h2>🚗 Safe & Self‑Drive Car Rental</h2>
+
+    <label>Booking Start (Date & Time)</label>
+    <input type="text" id="startTime" placeholder="Select start date & time" />
+
+    <label>Booking End (Date & Time)</label>
+    <input type="text" id="endTime" placeholder="Select end date & time" />
+
+    <label>Travel Location</label>
+    <input type="text" id="location" placeholder="Where are you going?" />
+
+    <label>Total Distance (KM)</label>
+    <input type="number" id="distance" placeholder="Expected total KM" min="0" />
+
+    <button id="calcBtn">Calculate Price</button>
+
+    <div class="result" id="result">Enter booking details to see price</div>
+
+    <button class="whatsapp" id="waBtn">📲 Book via WhatsApp</button>
+
+    <div class="note">
+      • ₹2880 per 24 hours (300 KM free/day)<br>
+      • ₹120 per extra hour<br>
+      • ₹5 per KM after free limit<br>
+      • Security deposit required (documents + bike)
+    </div>
+  </div>
+</div>
+
+<!-- Flatpickr JS (MUST be clean, no extra characters) -->
+<script src="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.js"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+  let lastTotal = 0;
+
+  const endPicker = flatpickr('#endTime', {
+    enableTime: true,
+    dateFormat: 'd-m-Y h:i K',
+    time_24hr: false,
+    minDate: 'today'
+  });
+
+  const startPicker = flatpickr('#startTime', {
+    enableTime: true,
+    dateFormat: 'd-m-Y h:i K',
+    time_24hr: false,
+    minDate: 'today',
+    onChange: function(selectedDates) {
+      if (selectedDates.length) {
+        const autoEnd = new Date(selectedDates[0].getTime() + 24 * 60 * 60 * 1000);
+        endPicker.setDate(autoEnd, true);
+      }
+    }
+  });
+
+  document.getElementById('calcBtn').addEventListener('click', function () {
+    const start = flatpickr.parseDate(startTime.value, 'd-m-Y h:i K');
+    const end = flatpickr.parseDate(endTime.value, 'd-m-Y h:i K');
+    const distance = Number(distance.value || 0);
+
+    if (!start || !end || end <= start) {
+      result.innerText = 'Please select valid date & time';
+      return;
+    }
+
+    const totalHours = Math.ceil((end - start) / (1000 * 60 * 60));
+    const days = Math.floor(totalHours / 24);
+    const extraHours = totalHours % 24;
+
+    const baseCost = (days * 2880) + (extraHours * 120);
+    const allowedKm = days * 300;
+    const extraKmCost = distance > allowedKm ? (distance - allowedKm) * 5 : 0;
+
+    lastTotal = baseCost + extraKmCost;
+
+    result.innerHTML = `
+      <strong>Duration:</strong> ${days} day(s) ${extraHours} hour(s)<br>
+      <strong>Base Fare:</strong> ₹${baseCost}<br>
+      <strong>Extra KM Charge:</strong> ₹${extraKmCost}<br>
+      <strong>Total Payable:</strong> ₹${lastTotal}
+    `;
+  });
+
+  document.getElementById('waBtn').addEventListener('click', function () {
+    if (!lastTotal) return alert('Please calculate price first');
+
+    const msg = `Hi, I want to book your self-drive car.%0A%0A📅 Start: ${startTime.value}%0A📅 End: ${endTime.value}%0A📍 Location: ${location.value || 'Not specified'}%0A💰 Total Fare: ₹${lastTotal}%0A(24-hour basis)`;
+    window.open(`https://wa.me/917013991690?text=${msg}`, '_blank');
+  });
+
+});
+</script>
+
+</body>
+</html>
